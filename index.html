@@ -1,0 +1,226 @@
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MaterialApp(
+    debugShowCheckedModeBanner: false,
+    home: AppHistoricoSeguro(),
+  ));
+}
+
+class AppHistoricoSeguro extends StatefulWidget {
+  const AppHistoricoSeguro({Key? key}) : super(key: key);
+
+  @override
+  State<AppHistoricoSeguro> createState() => _AppHistoricoSeguroState();
+}
+
+class _AppHistoricoSeguroState extends State<AppHistoricoSeguro> {
+  final TextEditingController _placaCtrl = TextEditingController();
+  final TextEditingController _cpfCtrl = TextEditingController();
+
+  int _telaAtual = 1;
+  bool _carregandoPix = false;
+
+  void _irParaPagamento() {
+    if (_placaCtrl.text.trim().length < 7) {
+      _aviso('Digite uma placa válida de 7 dígitos!');
+      return;
+    }
+    if (_cpfCtrl.text.trim().length < 11) {
+      _aviso('Digite um CPF válido de 11 dígitos!');
+      return;
+    }
+    setState(() {
+      _telaAtual = 2;
+    });
+  }
+
+  void _confirmarPagamentoSimulado() {
+    setState(() {
+      _carregandoPix = true;
+    });
+    Future.delayed(const Duration(seconds: 2), () {
+      setState(() {
+        _carregandoPix = false;
+        _telaAtual = 3;
+      });
+    });
+  }
+
+  void _simularImpressaoPDF() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: const [
+            Icon(Icons.print, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('Enviando para Impressora...'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Gerando arquivo: RELATORIO_VEICULAR.PDF', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            Text('• Documento vinculado ao CPF do cliente: ${_cpfCtrl.text}'),
+            Text('• Dados detalhados da Placa: ${_placaCtrl.text.toUpperCase()}'),
+            const SizedBox(height: 12),
+            const Text('Histórico Completo Incluído:\n- Registro de frotas de locação em Belo Horizonte/MG.\n- Quilometragem estimada via vistorias de seguro.', style: TextStyle(fontSize: 12, color: Colors.black54)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK / DOWNLOAD CONCLUÍDO'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _resetarConsulta() {
+    setState(() {
+      _placaCtrl.clear();
+      _cpfCtrl.clear();
+      _telaAtual = 1;
+    });
+  }
+
+  void _aviso(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: Colors.red),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA),
+      appBar: AppBar(
+        title: const Text('Histórico Seguro', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.green,
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: _carregandoPix
+            ? const Center(child: CircularProgressIndicator(color: Colors.green))
+            : _construirTelaAtiva(),
+      ),
+    );
+  }
+
+  Widget _construirTelaAtiva() {
+    if (_telaAtual == 1) {
+      return SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Icon(Icons.shield, size: 70, color: Colors.green),
+            const SizedBox(height: 12),
+            const Text('Consulte o Passado do Carro', textAlign: TextAlign.center, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            const Text('Descubra se o veículo já foi de locadora, leilão ou aplicativo.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+            const SizedBox(height: 24),
+            const Text('Placa do Veículo:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _placaCtrl,
+              textAlign: TextAlign.center,
+              textCapitalization: TextCapitalization.characters,
+              maxLength: 7,
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              decoration: const InputDecoration(hintText: 'ABC1D23', counterText: '', border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 16),
+            const Text('Seu CPF:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _cpfCtrl,
+              keyboardType: TextInputType.number,
+              maxLength: 11,
+              decoration: const InputDecoration(hintText: 'Apenas números', counterText: '', border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: _irParaPagamento,
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(vertical: 16)),
+              child: const Text('BUSCAR HISTÓRICO (R\$ 19,90)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_telaAtual == 2) {
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Icon(Icons.pix, size: 60, color: Colors.cyan),
+          const SizedBox(height: 12),
+          const Text('Pagamento via Pix', textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text('Placa: ${_placaCtrl.text.toUpperCase()} | CPF: ${_cpfCtrl.text}', textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey)),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(12),
+            color: Colors.grey,
+            child: const Text('00020101021226870014br.gov.bcb.pix2565qrcodepixsimulado...', style: TextStyle(fontSize: 11, fontFamily: 'monospace'), textAlign: TextAlign.center),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: _confirmarPagamentoSimulado,
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.cyan, padding: const EdgeInsets.symmetric(vertical: 14)),
+            child: const Text('SIMULAR PAGAMENTO DO PIX', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Icon(Icons.check_circle, size: 60, color: Colors.green),
+        const Text('Relatório Liberado!', textAlign: TextAlign.center, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.green)),
+        const SizedBox(height: 16),
+        Text('Placa Consultada: ${_placaCtrl.text.toUpperCase()}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const Divider(height: 20),
+        _linhaInfo(Icons.warning, Colors.orange, 'Histórico de Frota: DETECTADO (Belo Horizonte)'),
+        _linhaInfo(Icons.directions_car, Colors.red, 'Uso em Aplicativo: Alta Probabilidade'),
+        _linhaInfo(Icons.gavel, Colors.green, 'Passagem por Leilão: Nada Consta'),
+        _linhaInfo(Icons.speed, Colors.orange, 'Alerta de KM: Uso Urbano Severo Identificado'),
+        const SizedBox(height: 24),
+        
+        // NOVO BOTÃO DE IMPRIMIR / GERAR PDF
+        ElevatedButton.icon(
+          onPressed: _simularImpressaoPDF,
+          icon: const Icon(Icons.print, color: Colors.white),
+          label: const Text('IMPRIMIR / SALVAR EM PDF', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, padding: const EdgeInsets.symmetric(vertical: 12)),
+        ),
+        
+        const Spacer(),
+        ElevatedButton(
+          onPressed: _resetarConsulta,
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(vertical: 14)),
+          child: const Text('NOVA CONSULTA', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        ),
+      ],
+    );
+  }
+
+  Widget _linhaInfo(IconData icone, Color cor, String texto) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          Icon(icone, color: cor),
+          const SizedBox(width: 12),
+          Expanded(child: Text(texto, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500))),
+        ],
+      ),
+    );
+  }
+}
